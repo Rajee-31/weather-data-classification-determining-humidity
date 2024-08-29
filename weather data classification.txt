@@ -1,0 +1,45 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+df = pd.read_csv('/content/daily_weather (1) (2).csv')
+print("First few rows of the dataset:")
+print(df.head())
+print("\nBasic statistics:")
+print(df.describe())
+print("\nMissing values in each column:")
+print(df.isnull().sum())
+df['target'] = df['relative_humidity_3pm'].apply(lambda x: 1 if x > 25 else 0)
+X = df.drop(['relative_humidity_3pm', 'target'], axis=1)
+y = df['target']
+print("\nMissing values in feature columns:")
+print(X.isnull().sum())
+imputer = SimpleImputer(strategy='mean')
+X_imputed = imputer.fit_transform(X)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_imputed)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+model = DecisionTreeClassifier()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f'\nAccuracy of the Decision Tree model: {accuracy * 100:.2f}%')
+feature_importances = model.feature_importances_
+features = X.columns
+sorted_idx = feature_importances.argsort()
+
+plt.figure(figsize=(10, 6))
+plt.barh(range(len(sorted_idx)), feature_importances[sorted_idx], align='center')
+plt.yticks(range(len(sorted_idx)), [features[i] for i in sorted_idx])
+plt.xlabel('Feature Importance')
+plt.title('Feature Importance in Decision Tree Model')
+plt.show()
+sns.countplot(x=y)
+plt.title('Distribution of Target Variable')
+plt.xlabel('Target (Humidity > 25%)')
+plt.ylabel('Count')
+plt.show()
